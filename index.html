@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusSafe - Real-Time Incident Reporting</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f4f7f6; }
+        header { background-color: #0b3c5d; color: white; padding: 1rem; text-align: center; }
+        .container { max-width: 600px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; background-color: #328cc1; color: white; padding: 10px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:hover { background-color: #1d5b7eb4; }
+        #status { margin-top: 15px; padding: 10px; border-radius: 4px; display: none; }
+        .alert { background-color: #d9534f; color: white; }
+        .success { background-color: #5cb85c; color: white; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>CampusSafe</h1>
+    <p>Real-Time Campus Safety & Anonymous Reporting</p>
+</header>
+
+<div class="container">
+    <div class="form-group">
+        <label for="incidentType">Incident Type</label>
+        <select id="incidentType">
+            <option value="Medical Emergency">Medical Emergency</option>
+            <option value="Security Concern">Security Concern</option>
+            <option value="Hazardous Condition">Hazardous Condition</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" rows="4" placeholder="Describe the situation..."></textarea>
+    </div>
+    <button onclick="submitReport()">Submit Anonymous Report</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    function submitReport() {
+        const type = document.getElementById('incidentType').value;
+        const desc = document.getElementById('description').value;
+        const statusDiv = document.getElementById('status');
+        
+        if (!desc.trim()) {
+            statusDiv.innerHTML = "Please enter a description.";
+            statusDiv.className = "alert";
+            statusDiv.style.display = "block";
+            return;
+        }
+
+        if (navigator.geolocation) {
+            statusDiv.innerHTML = "Getting location and submitting report...";
+            statusDiv.className = "";
+            statusDiv.style.display = "block";
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                console.log("Report submitted:", { type, desc, lat, lng });
+                statusDiv.innerHTML = `Report sent successfully! Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                statusDiv.className = "success";
+                document.getElementById('description').value = '';
+            }, error => {
+                statusDiv.innerHTML = "Location access denied. Submitting without location.";
+                statusDiv.className = "alert";
+            });
+        } else {
+            statusDiv.innerHTML = "Geolocation not supported by this browser.";
+            statusDiv.className = "alert";
+            statusDiv.style.display = "block";
+        }
+    }
+</script>
+
+</body>
+</html>
