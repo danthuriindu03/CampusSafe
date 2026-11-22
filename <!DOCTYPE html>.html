@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusSafe — Smart Campus Emergency & Proximity Response</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-light: #273449;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --red: #ef4444;
+      --red-dark: #dc2626;
+      --green: #22c55e;
+      --blue: #3b82f6;
+      --amber: #f59e0b;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
+
+    /* Header & Tabs */
+    header {
+      background: #0b1220;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; }
+    .brand span.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); display: inline-block; box-shadow: 0 0 10px var(--red); }
+
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab-btn {
+      background: var(--card);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .tab-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .reset-btn { background: transparent; color: var(--amber); border: 1px solid var(--amber); }
+    .reset-btn:hover { background: rgba(245, 158, 11, 0.15); }
+
+    main { max-width: 1000px; margin: 24px auto; padding: 0 16px; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 780px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .card h2 { font-size: 1.1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      display: inline-block;
+    }
+    .badge-green { background: rgba(34, 197, 94, 0.18); color: #4ade80; }
+    .badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .badge-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+
+    /* Form Controls */
+    .verified-box {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; margin-top: 12px; }
+    select, input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .type-btn {
+      background: var(--card-light);
+      border: 2px solid transparent;
+      color: var(--text);
+      padding: 12px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .type-btn.selected { border-color: var(--red); background: rgba(239, 68, 68, 0.15); }
+
+    .sos-btn {
+      width: 100%;
+      margin-top: 18px;
+      padding: 16px;
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+      transition: 0.2s;
+    }
+    .sos-btn:hover { background: var(--red-dark); transform: translateY(-1px); }
+    .sos-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Safety Steps & Timeline */
+    .safety-box {
+      background: rgba(245, 158, 11, 0.12);
+      border-left: 4px solid var(--amber);
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .safety-box h3 { font-size: 0.95rem; color: #fbbf24; margin-bottom: 8px; }
+    .safety-box ul { padding-left: 18px; font-size: 0.9rem; line-height: 1.6; }
+
+    .timeline { list-style: none; margin-top: 10px; }
+    .timeline li {
+      position: relative;
+      padding-left: 28px;
+      padding-bottom: 16px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .timeline li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 4px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--border);
+      border: 2px solid var(--card);
+    }
+    .timeline li::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 18px;
+      width: 2px;
+      height: calc(100% - 14px);
+      background: var(--border);
+    }
+    .timeline li:last-child::after { display: none; }
+    .timeline li.done { color: var(--text); font-weight: 600; }
+    .timeline li.done::before { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .timeline li.active { color: #fbbf24; font-weight: 700; }
+    .timeline li.active::before { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+
+    .responder-card {
+      background: var(--card-light);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* Control Room Radar */
+    .radar-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 340px;
+      aspect-ratio: 1 / 1;
+      margin: 10px auto;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(15,23,42,0.95) 75%);
+      border: 2px solid var(--border);
+      overflow: hidden;
+    }
+    .ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      pointer-events: none;
+    }
+    .ring-50 { width: 32%; height: 32%; }
+    .ring-100 { width: 64%; height: 64%; }
+    .ring-200 { width: 96%; height: 96%; }
+    .ring-label {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: rgba(15,23,42,0.8);
+      padding: 0 4px;
+    }
+
+    .pulse-wave {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--blue);
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .pulse-wave.animate {
+      animation: waveOut 1.4s ease-out forwards;
+    }
+    @keyframes waveOut {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 0.95; }
+      100% { transform: translate(-50%, -50%) scale(11); opacity: 0; }
+    }
+
+    .dot-node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      transition: left 0.8s linear, top 0.8s linear, background 0.3s;
+    }
+    .dot-label {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 0.7rem;
+      background: rgba(15, 23, 42, 0.85);
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--text);
+    }
+    .student-dot {
+      left: 50%; top: 50%;
+      background: var(--red);
+      box-shadow: 0 0 14px var(--red);
+      z-index: 4;
+    }
+    .helper-dot { background: var(--blue); box-shadow: 0 0 8px var(--blue); z-index: 3; }
+    .helper-dot.alerted { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+    .helper-dot.dispatched { background: var(--green); box-shadow: 0 0 12px var(--green); }
+
+    .helper-list { list-style: none; margin-top: 10px; }
+    .helper-item {
+      background: var(--card-light);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+    }
+
+    .action-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .btn {
+      flex: 1;
+      min-width: 150px;
+      padding: 11px 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      font-size: 0.88rem;
+      transition: 0.2s;
+    }
+    .btn-blue { background: var(--blue); }
+    .btn-green { background: var(--green); color: #052e16; }
+    .btn-amber { background: var(--amber); color: #1c1917; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .empty-state { text-align: center; padding: 36px 16px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    CampusSafe Prototype
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-student" onclick="switchTab('student')">1. Student SOS App</button>
+    <button class="tab-btn" id="tab-control" onclick="switchTab('control')">2. Control Room Radar</button>
+    <button class="tab-btn reset-btn" onclick="resetDemo()">↺ Reset Demo</button>
+  </div>
+</header>
+
+<main>
+  <!-- ==================== TAB 1: STUDENT SOS APP ==================== -->
+  <section id="student-view" class="view active">
+    <div class="grid-2">
+      <!-- Left: Report Panel -->
+      <div class="card">
+        <h2>🚨 Report Campus Emergency</h2>
+        <div class="verified-box">
+          <div>
+            <strong>Verified ID:</strong> 26CSE-104 (Indu)<br/>
+            <span style="color: var(--muted); font-size: 0.8rem;">Anti-Prank Lock: College ID + Live GPS Logged</span>
+          </div>
+          <span class="badge badge-green">✓ Verified</span>
+        </div>
+
+        <label>Select Emergency Type</label>
+        <div class="type-grid">
+          <button class="type-btn selected" onclick="selectType(this, 'dog')">🐕 Stray Dog / Animal</button>
+          <button class="type-btn" onclick="selectType(this, 'medical')">🏥 Medical Help</button>
+          <button class="type-btn" onclick="selectType(this, 'harassment')">⚠️ Harassment / Threat</button>
+          <button class="type-btn" onclick="selectType(this, 'fire')">🔥 Fire / Hazard</button>
+        </div>
+
+        <label for="location-select">Your Detected Campus Location</label>
+        <select id="location-select">
+          <option value="Library Pathway (Near Block B)">Library Pathway (Near Block B)</option>
+          <option value="Girls Hostel Gate Road">Girls Hostel Gate Road</option>
+          <option value="Main Gate Parking Area">Main Gate Parking Area</option>
+          <option value="Canteen Backside Lane">Canteen Backside Lane</option>
+        </select>
+
+        <button class="sos-btn" id="sos-btn" onclick="triggerSOS()">SEND SOS ALERT</button>
+      </div>
+
+      <!-- Right: Next Forward Steps (After Reporting) -->
+      <div class="card">
+        <h2>🧭 After Reporting: Live Next Steps</h2>
+
+        <div id="student-idle" class="empty-state">
+          <p>No active SOS alert.</p>
+          <p style="font-size: 0.85rem; margin-top: 6px;">Select an emergency type (e.g., <strong>Stray Dog</strong>) and tap <strong>SEND SOS ALERT</strong> to see live safety steps and nearby responder tracking.</p>
+        </div>
+
+        <div id="student-active" style="display: none;">
+          <div class="safety-box">
+            <h3 id="safety-title">Immediate Safety Instructions</h3>
+            <ul id="safety-list"></ul>
+          </div>
+
+          <h3 style="font-size: 0.95rem; margin-bottom: 6px;">Live Response Progress</h3>
+          <ul class="timeline">
+            <li id="step-1">1. SOS Sent & Student ID Verified (Anti-Prank Check)</li>
+            <li id="step-2">2. Control Room Alerted with Live GPS Pin</li>
+            <li id="step-3">3. Nearby Guards & Volunteers Within 100m Detected</li>
+            <li id="step-4">4. Nearest Guard Dispatched to Your Location</li>
+            <li id="step-5">5. Responder Arrived — Situation Safe</li>
+          </ul>
+
+          <div class="responder-card" id="responder-card" style="display: none;">
+            <div>
+              <strong id="responder-name">Guard Ramesh (Security)</strong><br/>
+              <span style="font-size: 0.85rem; color: var(--muted);" id="responder-status">Moving toward you...</span>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge badge-green" id="responder-dist">45m away</span>
+              <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;" id="responder-eta">ETA: ~30 sec</div>
+            </div>
+          </div>
+
+          <div class="action-row" style="margin-top: 14px;">
+            <button class="btn btn-blue" onclick="switchTab('control')">Open Control Room View →</button>
+            <button class="btn btn-green" id="safe-btn" onclick="markResolved()">✓ I Am Safe Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 2: CONTROL ROOM DASHBOARD ==================== -->
+  <section id="control-view" class="view">
+    <div id="control-idle" class="card empty-state">
+      <h2>🛡️ Campus Control Room — All Clear</h2>
+      <p style="margin-top: 8px;">Waiting for live SOS alerts. Switch to <strong>Student SOS App</strong> and tap <strong>SEND SOS ALERT</strong> to test live proximity detection.</p>
+    </div>
+
+    <div id="control-active" style="display: none;">
+      <div class="card" style="border-color: var(--red);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <span class="badge badge-red" id="ctrl-status-badge">LIVE SOS ALERT</span>
+            <h2 style="margin-top: 6px; margin-bottom: 4px;" id="ctrl-incident-title">🐕 Stray Dog / Animal Threat</h2>
+            <p style="font-size: 0.9rem; color: var(--muted);">
+              Student: <strong>26CSE-104 (Indu)</strong> • Location: <strong id="ctrl-location">Library Pathway</strong>
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <span class="badge badge-green">ID Verified (Low Prank Risk)</span>
+            <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;" id="ctrl-time">Just now</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Left: Live Proximity Radar -->
+        <div class="card">
+          <h2>📡 Live Proximity Radar (50m / 100m / 200m)</h2>
+          <p style="font-size: 0.83rem; color: var(--muted); margin-bottom: 10px;">
+            Automatically detects campus guards & NSS volunteers around the student.
+          </p>
+          <div class="radar-wrap">
+            <div class="ring ring-50"><span class="ring-label" style="top: -9px;">50m</span></div>
+            <div class="ring ring-100"><span class="ring-label" style="top: -9px;">100m</span></div>
+            <div class="ring ring-200"><span class="ring-label" style="top: 2px;">200m</span></div>
+            <div class="pulse-wave" id="radar-wave"></div>
+
+            <!-- Student Center Dot -->
+            <div class="dot-node student-dot">
+              <span class="dot-label">SOS Student</span>
+            </div>
+
+            <!-- Nearby Helper Dots -->
+            <div class="dot-node helper-dot" id="dot-ramesh" style="left: 63%; top: 38%;">
+              <span class="dot-label">Guard Ramesh (45m)</span>
+            </div>
+            <div class="dot-node helper-dot" id="dot-priya" style="left: 30%; top: 68%;">
+              <span class="dot-label">NSS Priya (70m)</span>
+            </div>
+            <div class="dot-node helper-dot" id="dot-suresh" style="left: 78%; top: 75%;">
+              <span class="dot-label">Guard Suresh (125m)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Nearby Responders & Dispatch Controls -->
+        <div class="card">
+          <h2>👮 Detected Helpers Nearby</h2>
+          <ul class="helper-list">
+            <li class="helper-item">
+              <div><strong>Guard Ramesh</strong> (Block B Gate)<br/><span style="color:var(--muted); font-size:0.8rem;" id="list-ramesh-dist">45 meters away • Within 50m</span></div>
+              <span class="badge badge-blue" id="badge-ramesh">Standby</span>
+            </li>
+            <li class="helper-item">
+              <div><strong>NSS Volunteer Priya</strong> (Library)<br/><span style="color:var(--muted); font-size:0.8rem;">70 meters away • Within 100m</span></div>
+              <span class="badge badge-blue" id="badge-priya">Standby</span>
+            </li>
+            <li class="helper-item">
+              <div><strong>Guard Suresh</strong> (Main Gate)<br/><span style="color:var(--muted); font-size:0.8rem;">125 meters away • Within 200m</span></div>
+              <span class="badge badge-blue" id="badge-suresh">Standby</span>
+            </li>
+          </ul>
+
+          <div class="action-row">
+            <button class="btn btn-amber" id="btn-broadcast" onclick="broadcastNearby()">📢 Alert All Within 100m</button>
+            <button class="btn btn-blue" id="btn-dispatch" onclick="dispatchGuard()">🏃 Dispatch Closest Guard</button>
+          </div>
+          <div class="action-row">
+            <button class="btn btn-green" id="btn-resolve" onclick="markResolved()">✓ Mark Situation Resolved</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const safetyGuides = {
+    dog: {
+      title: "🐕 Stray Dog / Barking Dog — Do This Now:",
+      steps: [
+        "Stop moving immediately. Do NOT run — running triggers a chase.",
+        "Avoid direct eye contact and keep your hands down.",
+        "Place your backpack or notebook between you and the dog as a barrier.",
+        "Back away slowly toward a well-lit building or crowd while help arrives."
+      ]
+    },
+    medical: {
+      title: "🏥 Medical Emergency — Do This Now:",
+      steps: [
+        "Sit or lie down in a safe, shaded spot and stay calm.",
+        "Loosen tight clothing and take slow, steady breaths.",
+        "Keep your phone screen on so responders can spot you quickly."
+      ]
+    },
+    harassment: {
+      title: "⚠️ Personal Safety — Do This Now:",
+      steps: [
+        "Move immediately toward the nearest crowded area, security booth, or open classroom.",
+        "Keep your phone in hand — live GPS is streaming to the Control Room.",
+        "Do not enter isolated corridors or parking corners."
+      ]
+    },
+    fire: {
+      title: "🔥 Fire / Hazard — Do This Now:",
+      steps: [
+        "Move at least 50 meters away from smoke, sparks, or heat.",
+        "Use stairs only — never use elevators.",
+        "Alert nearby students as you move to the open assembly ground."
+      ]
+    }
+  };
+
+  const typeLabels = {
+    dog: "🐕 Stray Dog / Animal Threat",
+    medical: "🏥 Medical Emergency",
+    harassment: "⚠️ Harassment / Personal Threat",
+    fire: "🔥 Fire / Campus Hazard"
+  };
+
+  let state = {
+    selectedType: "dog",
+    active: false,
+    broadcasted: false,
+    dispatched: false,
+    resolved: false,
+    guardDist: 45,
+    timer: null
+  };
+
+  function switchTab(tab) {
+    document.getElementById("student-view").classList.toggle("active", tab === "student");
+    document.getElementById("control-view").classList.toggle("active", tab === "control");
+    document.getElementById("tab-student").classList.toggle("active", tab === "student");
+    document.getElementById("tab-control").classList.toggle("active", tab === "control");
+  }
+
+  function selectType(btn, type) {
+    if (state.active) return;
+    document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    state.selectedType = type;
+  }
+
+  function setTimelineStep(stepNum) {
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById("step-" + i);
+      el.className = "";
+      if (i < stepNum) el.classList.add("done");
+      else if (i === stepNum) el.classList.add(stepNum === 5 ? "done" : "active");
+    }
+  }
+
+  function triggerSOS() {
+    state.active = true;
+    const loc = document.getElementById("location-select").value;
+    const guide = safetyGuides[state.selectedType];
+
+    // Update Student View
+    document.getElementById("sos-btn").disabled = true;
+    document.getElementById("sos-btn").textContent = "SOS ACTIVE — HELP IN PROGRESS";
+    document.getElementById("student-idle").style.display = "none";
+    document.getElementById("student-active").style.display = "block";
+    document.getElementById("safety-title").textContent = guide.title;
+    document.getElementById("safety-list").innerHTML = guide.steps.map(s => `<li>${s}</li>`).join("");
+    setTimelineStep(2);
+
+    // Update Control Room View
+    document.getElementById("control-idle").style.display = "none";
+    document.getElementById("control-active").style.display = "block";
+    document.getElementById("ctrl-incident-title").textContent = typeLabels[state.selectedType];
+    document.getElementById("ctrl-location").textContent = loc;
+    document.getElementById("ctrl-time").textContent = "Reported at " + new Date().toLocaleTimeString();
+  }
+
+  function broadcastNearby() {
+    if (!state.active || state.broadcasted) return;
+    state.broadcasted = true;
+
+    const wave = document.getElementById("radar-wave");
+    wave.classList.remove("animate");
+    void wave.offsetWidth;
+    wave.classList.add("animate");
+
+    document.getElementById("dot-ramesh").classList.add("alerted");
+    document.getElementById("dot-priya").classList.add("alerted");
+    document.getElementById("badge-ramesh").textContent = "Alerted (<100m)";
+    document.getElementById("badge-ramesh").className = "badge badge-amber";
+    document.getElementById("badge-priya").textContent = "Alerted (<100m)";
+    document.getElementById("badge-priya").className = "badge badge-amber";
+
+    document.getElementById("btn-broadcast").disabled = true;
+    setTimelineStep(3);
+  }
+
+  function dispatchGuard() {
+    if (!state.active || state.dispatched) return;
+    if (!state.broadcasted) broadcastNearby();
+    state.dispatched = true;
+
+    document.getElementById("btn-dispatch").disabled = true;
+    document.getElementById("dot-ramesh").className = "dot-node helper-dot dispatched";
+    document.getElementById("badge-ramesh").textContent = "Dispatched";
+    document.getElementById("badge-ramesh").className = "badge badge-green";
+
+    document.getElementById("responder-card").style.display = "flex";
+    setTimelineStep(4);
+
+    // Animate guard moving toward student (50%, 50%)
+    let leftPos = 63;
+    let topPos = 38;
+    state.timer = setInterval(() => {
+      if (state.guardDist <= 5) {
+        clearInterval(state.timer);
+        state.guardDist = 0;
+        updateGuardUI(50, 50);
+        document.getElementById("responder-status").textContent = "Guard Ramesh has reached your location!";
+        document.getElementById("responder-eta").textContent = "Arrived";
+        setTimelineStep(5);
+        return;
+      }
+      state.guardDist -= 10;
+      leftPos -= 3;
+      topPos += 3;
+      updateGuardUI(leftPos, topPos);
+    }, 900);
+  }
+
+  function updateGuardUI(left, top) {
+    const dot = document.getElementById("dot-ramesh");
+    dot.style.left = left + "%";
+    dot.style.top = top + "%";
+    dot.querySelector(".dot-label").textContent = `Guard Ramesh (${state.guardDist}m)`;
+    document.getElementById("list-ramesh-dist").textContent = `${state.guardDist} meters away`;
+    document.getElementById("responder-dist").textContent = state.guardDist === 0 ? "Arrived" : `${state.guardDist}m away`;
+    document.getElementById("responder-eta").textContent = state.guardDist === 0 ? "On site" : `ETA: ~${Math.max(5, Math.round(state.guardDist * 0.7))} sec`;
+  }
+
+  function markResolved() {
+    if (!state.active) return;
+    clearInterval(state.timer);
+    state.resolved = true;
+    setTimelineStep(5);
+    document.getElementById("ctrl-status-badge").textContent = "RESOLVED";
+    document.getElementById("ctrl-status-badge").className = "badge badge-green";
+    document.getElementById("responder-card").style.display = "flex";
+    document.getElementById("responder-status").textContent = "Incident closed safely.";
+    document.getElementById("responder-dist").textContent = "Safe";
+    document.getElementById("btn-resolve").disabled = true;
+    document.getElementById("safe-btn").disabled = true;
+  }
+
+  function resetDemo() {
+    clearInterval(state.timer);
+    state = { selectedType: "dog", active: false, broadcasted: false, dispatched: false, resolved: false, guardDist: 45, timer: null };
+
+    document.getElementById("sos-btn").disabled = false;
+    document.getElementById("sos-btn").textContent = "SEND SOS ALERT";
+    document.getElementById("student-idle").style.display = "block";
+    document.getElementById("student-active").style.display = "none";
+    document.getElementById("responder-card").style.display = "none";
+    document.getElementById("safe-btn").disabled = false;
+
+    document.getElementById("control-idle").style.display = "block";
+    document.getElementById("control-active").style.display = "none";
+    document.getElementById("ctrl-status-badge").textContent = "LIVE SOS ALERT";
+    document.getElementById("ctrl-status-badge").className = "badge badge-red";
+    document.getElementById("btn-broadcast").disabled = false;
+    document.getElementById("btn-dispatch").disabled = false;
+    document.getElementById("btn-resolve").disabled = false;
+
+    const ramesh = document.getElementById("dot-ramesh");
+    ramesh.style.left = "63%"; ramesh.style.top = "38%";
+    ramesh.className = "dot-node helper-dot";
+    ramesh.querySelector(".dot-label").textContent = "Guard Ramesh (45m)";
+    document.getElementById("dot-priya").className = "dot-node helper-dot";
+    document.getElementById("badge-ramesh").textContent = "Standby";
+    document.getElementById("badge-ramesh").className = "badge badge-blue";
+    document.getElementById("badge-priya").textContent = "Standby";
+    document.getElementById("badge-priya").className = "badge badge-blue";
+    document.getElementById("list-ramesh-dist").textContent = "45 meters away • Within 50m";
+    switchTab("student");
+  }
+</script>
+</body>
+</html>
